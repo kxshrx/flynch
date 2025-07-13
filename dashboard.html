@@ -3,9 +3,9 @@
 <head>
     <title>GitHub Repository Manager</title>
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            margin: 40px; 
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
             background-color: #f6f8fa;
         }
         .container {
@@ -14,25 +14,33 @@
             background: white;
             padding: 30px;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
-        .btn { 
-            background: #24292e; 
-            color: white; 
-            padding: 12px 24px; 
-            text-decoration: none; 
-            border-radius: 6px; 
+        .btn {
+            background: #24292e;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
             display: inline-block;
             margin: 10px 5px 10px 0;
             border: none;
             cursor: pointer;
         }
-        .btn:hover { background: #1b1f23; }
+        .btn:hover {
+            background: #1b1f23;
+        }
         .btn-refresh {
             background: #28a745;
         }
         .btn-refresh:hover {
             background: #218838;
+        }
+        .btn-analyze {
+            background: #007bff;
+        }
+        .btn-analyze:hover {
+            background: #0056b3;
         }
         .btn:disabled {
             background: #6c757d;
@@ -55,23 +63,25 @@
             border: 1px solid #bee5eb;
             font-size: 14px;
         }
-        .repo { 
-            border: 1px solid #e1e4e8; 
-            padding: 20px; 
-            margin: 15px 0; 
+        .repo {
+            border: 1px solid #e1e4e8;
+            padding: 20px;
+            margin: 15px 0;
             border-radius: 6px;
             background: #f6f8fa;
         }
-        .repo-name { 
-            font-size: 18px; 
-            font-weight: bold; 
+        .repo-name {
+            font-size: 18px;
+            font-weight: bold;
             margin-bottom: 8px;
         }
-        .repo-name a { 
-            color: #0366d6; 
-            text-decoration: none; 
+        .repo-name a {
+            color: #0366d6;
+            text-decoration: none;
         }
-        .repo-name a:hover { text-decoration: underline; }
+        .repo-name a:hover {
+            text-decoration: underline;
+        }
         .repo-meta {
             font-size: 14px;
             color: #586069;
@@ -109,36 +119,86 @@
             margin: 10px 0;
             font-size: 12px;
         }
+        .nav-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #e9ecef;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        .nav-buttons .btn {
+            flex: 1;
+            text-align: center;
+            min-width: 200px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>GitHub Repository Manager</h1>
-        
+
         <div id="github-section">
             <h2>Repository Management</h2>
-            
-            <div id="debug-info" class="debug-info" style="display: none;"></div>
-            
-            <div id="status" style="display: none;">
+
+            <div id="debug-info" class="debug-info" style="display: none"></div>
+
+            <div id="status" style="display: none">
                 <div class="status">GitHub Connected Successfully</div>
             </div>
-            
+
             <a href="/auth/github" class="btn" id="connect-btn">Connect GitHub</a>
-            
+
             <div id="controls" class="controls">
-                <button class="btn btn-refresh" id="refresh-btn" onclick="refreshRepositories()">
+                <button
+                    class="btn btn-refresh"
+                    id="refresh-btn"
+                    onclick="refreshRepositories()"
+                >
                     Refresh Repositories
                 </button>
-                <button class="btn" id="check-connection-btn" onclick="checkConnection()">
+                <button
+                    class="btn"
+                    id="check-connection-btn"
+                    onclick="checkConnection()"
+                >
                     Check Connection Status
                 </button>
-                <div id="last-sync" class="info" style="display: none;"></div>
+                <div id="last-sync" class="info" style="display: none"></div>
             </div>
-            
+
+            <!-- Navigation Section -->
+            <div id="navigation-section" class="nav-section" style="display: none;">
+                <h3>Project Analysis</h3>
+                <div class="nav-buttons">
+                    <button
+                        class="btn btn-analyze"
+                        id="analyze-repos-btn"
+                        onclick="goToRepoSelection()"
+                    >
+                        Select Repositories for Analysis
+                    </button>
+                    <button
+                        class="btn"
+                        id="view-projects-btn"
+                        onclick="viewAnalyzedProjects()"
+                        style="background: #6c757d;"
+                    >
+                        View Analyzed Projects
+                    </button>
+                </div>
+            </div>
+
             <div id="repos">
                 <h3>Stored Repositories</h3>
-                <div id="repos-list">Click "Check Connection Status" to load repositories...</div>
+                <div id="repos-list">
+                    Click "Check Connection Status" to load repositories...
+                </div>
             </div>
         </div>
     </div>
@@ -146,85 +206,124 @@
     <script>
         let currentUsername = null;
         let isConnected = false;
-        
+
         // Always show controls and repos sections
-        document.getElementById('controls').style.display = 'block';
-        document.getElementById('repos').style.display = 'block';
-        
+        document.getElementById("controls").style.display = "block";
+        document.getElementById("repos").style.display = "block";
+
         // Check URL parameters first
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('connected') === 'true') {
-            document.getElementById('status').style.display = 'block';
-            document.getElementById('connect-btn').style.display = 'none';
+        if (urlParams.get("connected") === "true") {
+            document.getElementById("status").style.display = "block";
+            document.getElementById("connect-btn").style.display = "none";
             checkConnection();
         } else {
             // Always check connection on page load
             checkConnection();
         }
-        
-        async function checkConnection() {
-            const debugDiv = document.getElementById('debug-info');
-            debugDiv.style.display = 'block';
-            debugDiv.innerHTML = 'Checking GitHub connection...';
+
+        function goToRepoSelection() {
+            if (!currentUsername) {
+                alert("Please connect to GitHub first");
+                return;
+            }
+            console.log("Navigating to repository selection...");
+            window.location.href = "/repo-selection";
+        }
+
+        function viewAnalyzedProjects() {
+            if (!currentUsername) {
+                alert("Please connect to GitHub first");
+                return;
+            }
+            console.log("Navigating to analyzed projects...");
+            window.location.href = "/analyzed-projects";
+        }
+
+        function updateButtonVisibility() {
+            const connectBtn = document.getElementById("connect-btn");
+            const navSection = document.getElementById("navigation-section");
             
+            if (isConnected && currentUsername) {
+                connectBtn.style.display = "none";
+                navSection.style.display = "block";
+            } else {
+                connectBtn.style.display = "block";
+                navSection.style.display = "none";
+            }
+        }
+
+        async function checkConnection() {
+            const debugDiv = document.getElementById("debug-info");
+            debugDiv.style.display = "block";
+            debugDiv.innerHTML = "Checking GitHub connection...";
+
             try {
-                const response = await fetch('/github/repos');
+                const response = await fetch("/github/repos");
                 debugDiv.innerHTML = `Response status: ${response.status}`;
-                
+
                 if (response.ok) {
                     const data = await response.json();
-                    debugDiv.innerHTML = `Found ${data.repos ? data.repos.length : 0} repositories in database`;
-                    
+                    debugDiv.innerHTML = `Found ${
+                        data.repos ? data.repos.length : 0
+                    } repositories in database`;
+
                     if (data.repos && data.repos.length > 0) {
                         isConnected = true;
                         currentUsername = data.username;
-                        document.getElementById('connect-btn').style.display = 'none';
+                        updateButtonVisibility();
                         loadRepositories();
                         debugDiv.innerHTML = `Connected as: ${currentUsername} | ${data.repos.length} repos loaded`;
                     } else {
-                        debugDiv.innerHTML = 'No repositories found. Please connect GitHub first.';
-                        document.getElementById('connect-btn').style.display = 'block';
+                        isConnected = false;
+                        currentUsername = null;
+                        updateButtonVisibility();
+                        debugDiv.innerHTML = "No repositories found. Please connect GitHub first.";
                     }
                 } else {
                     const errorData = await response.json();
-                    debugDiv.innerHTML = `Error: ${errorData.detail || 'Unknown error'}`;
-                    document.getElementById('connect-btn').style.display = 'block';
+                    isConnected = false;
+                    currentUsername = null;
+                    updateButtonVisibility();
+                    debugDiv.innerHTML = `Error: ${errorData.detail || "Unknown error"}`;
                 }
             } catch (error) {
+                isConnected = false;
+                currentUsername = null;
+                updateButtonVisibility();
                 debugDiv.innerHTML = `Connection check failed: ${error.message}`;
-                document.getElementById('connect-btn').style.display = 'block';
             }
         }
-        
+
         async function loadRepositories() {
             try {
-                const response = await fetch('/github/repos');
+                const response = await fetch("/github/repos");
                 const data = await response.json();
-                
+
                 currentUsername = data.username;
-                
-                const reposList = document.getElementById('repos-list');
-                const lastSyncDiv = document.getElementById('last-sync');
-                
+
+                const reposList = document.getElementById("repos-list");
+                const lastSyncDiv = document.getElementById("last-sync");
+
                 if (data.last_sync) {
                     const syncTime = new Date(data.last_sync).toLocaleString();
                     lastSyncDiv.innerHTML = `Last synchronized: ${syncTime} | Total repos: ${data.total_count}`;
-                    lastSyncDiv.style.display = 'block';
+                    lastSyncDiv.style.display = "block";
                 }
-                
+
                 if (data.repos.length === 0) {
-                    reposList.innerHTML = '<div>No repositories found in database.</div>';
+                    reposList.innerHTML = "<div>No repositories found in database.</div>";
                     return;
                 }
-                
-                reposList.innerHTML = '';
-                
-                data.repos.forEach(repo => {
-                    const repoDiv = document.createElement('div');
-                    repoDiv.className = 'repo';
-                    
+
+                reposList.innerHTML = "";
+
+                data.repos.forEach((repo) => {
+                    const repoDiv = document.createElement("div");
+                    repoDiv.className = "repo";
+
                     const fetchedTime = new Date(repo.fetched_at).toLocaleString();
-                    
+
                     repoDiv.innerHTML = `
                         <div class="repo-name">
                             <a href="${repo.url}" target="_blank">${repo.name}</a>
@@ -237,51 +336,49 @@
                     `;
                     reposList.appendChild(repoDiv);
                 });
-                
+
                 console.log(`Displayed ${data.repos.length} repositories from database`);
-                
             } catch (error) {
-                console.error('Error loading repositories:', error);
-                document.getElementById('repos-list').innerHTML = 
+                console.error("Error loading repositories:", error);
+                document.getElementById("repos-list").innerHTML = 
                     `<div style="color: red;">Failed to load repositories: ${error.message}</div>`;
             }
         }
-        
+
         async function refreshRepositories() {
             if (!currentUsername) {
-                alert('No GitHub connection found. Please check connection first.');
+                alert("No GitHub connection found. Please check connection first.");
                 return;
             }
-            
-            const refreshBtn = document.getElementById('refresh-btn');
+
+            const refreshBtn = document.getElementById("refresh-btn");
             const originalText = refreshBtn.textContent;
-            const debugDiv = document.getElementById('debug-info');
-            
+            const debugDiv = document.getElementById("debug-info");
+
             refreshBtn.disabled = true;
-            refreshBtn.textContent = 'Refreshing...';
-            debugDiv.style.display = 'block';
-            debugDiv.innerHTML = 'Fetching latest repositories from GitHub...';
-            
+            refreshBtn.textContent = "Refreshing...";
+            debugDiv.style.display = "block";
+            debugDiv.innerHTML = "Fetching latest repositories from GitHub...";
+
             try {
                 const response = await fetch(`/github/refresh/${currentUsername}`, {
-                    method: 'POST'
+                    method: "POST",
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (response.ok) {
                     debugDiv.innerHTML = `Refresh completed successfully`;
-                    alert('Repositories refreshed successfully!');
+                    alert("Repositories refreshed successfully!");
                     await loadRepositories();
                 } else {
                     debugDiv.innerHTML = `Refresh failed: ${result.detail}`;
                     alert(`Refresh failed: ${result.detail}`);
                 }
-                
             } catch (error) {
-                console.error('Error refreshing repositories:', error);
+                console.error("Error refreshing repositories:", error);
                 debugDiv.innerHTML = `Refresh error: ${error.message}`;
-                alert('Failed to refresh repositories');
+                alert("Failed to refresh repositories");
             } finally {
                 refreshBtn.disabled = false;
                 refreshBtn.textContent = originalText;

@@ -130,6 +130,8 @@ async def get_analyzed_projects(db: Session = Depends(get_database)):
     for project in projects:
         tech_stack = json.loads(project.tech_stack) if project.tech_stack else []
         skills = json.loads(project.skills) if project.skills else []
+        responsibilities = json.loads(project.responsibilities) if project.responsibilities else []
+        key_features = json.loads(project.key_features) if project.key_features else []
         
         project_list.append({
             "id": project.id,
@@ -140,18 +142,35 @@ async def get_analyzed_projects(db: Session = Depends(get_database)):
             "skills": skills,
             "domain": project.domain,
             "impact": project.impact,
+            "problem_solved": project.problem_solved,
+            "project_type": project.project_type,
+            "responsibilities": responsibilities,
+            "key_features": key_features,
+            "used_llm_or_vector": project.used_llm_or_vector,
             "status": project.analysis_status,
             "error_message": project.error_message,
             "created_at": project.created_at.isoformat(),
             "updated_at": project.updated_at.isoformat()
         })
+
     
     return {"projects": project_list, "total_count": len(project_list)}
 
 @router.get("/repo-selection", response_class=HTMLResponse)
 async def repo_selection_page():
+    """Repository selection page - returns HTML template"""
     try:
         with open("templates/repo_selection.html", "r") as file:
-            return HTMLResponse(content=file.read())
+            html_content = file.read()
+            return HTMLResponse(content=html_content)
     except FileNotFoundError:
-        return HTMLResponse(content="<h1>Template not found</h1><p>Please ensure templates/repo_selection.html exists.</p>")
+        return HTMLResponse(content="""
+        <html>
+            <head><title>Template Not Found</title></head>
+            <body>
+                <h1>Repository Selection Template Not Found</h1>
+                <p>Please ensure templates/repo_selection.html exists.</p>
+                <a href="/dashboard">Back to Dashboard</a>
+            </body>
+        </html>
+        """)

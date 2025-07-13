@@ -1,19 +1,12 @@
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
-from dotenv import load_dotenv
-from pathlib import Path
+from dotenv import load_dotenv, find_dotenv
 import os
 
-# Load environment variables from root directory
-current_file = Path(__file__).resolve()
-root_dir = current_file.parent  # main.py is in root, so parent is root
-env_path = root_dir / '.env'
-
-if env_path.exists():
-    load_dotenv(dotenv_path=env_path, verbose=True)
-    print(f"✅ Environment loaded in main.py from: {env_path}")
-else:
-    print(f"❌ .env file not found at: {env_path}")
+# Load environment variables
+env_file = find_dotenv()
+if env_file:
+    load_dotenv(env_file, verbose=True)
 
 from routes.github import router as github_router
 from routes.analysis import router as analysis_router
@@ -35,7 +28,21 @@ async def dashboard():
 async def root():
     return {"message": "GitHub Repository Manager API"}
 
+# ADD THIS BACKUP ROUTE
 @app.get("/repo-selection", response_class=HTMLResponse)
-async def repo_selection():
-    with open("templates/repo_selection.html", "r") as file:
-        return HTMLResponse(content=file.read())
+async def repo_selection_backup():
+    """Backup route for repository selection"""
+    try:
+        with open("templates/repo_selection.html", "r") as file:
+            return HTMLResponse(content=file.read())
+    except FileNotFoundError:
+        return HTMLResponse(content="""
+        <html>
+            <head><title>Repository Selection</title></head>
+            <body>
+                <h1>Repository Selection</h1>
+                <p>Template file not found. Please ensure templates/repo_selection.html exists.</p>
+                <a href="/dashboard">Back to Dashboard</a>
+            </body>
+        </html>
+        """)

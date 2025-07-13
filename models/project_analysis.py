@@ -21,7 +21,6 @@ class UTCDateTime(TypeDecorator):
         if value is not None:
             return value.replace(tzinfo=timezone.utc)
         return value
-
 class ProjectAnalysis(Base):
     __tablename__ = "project_analysis"
     
@@ -39,3 +38,10 @@ class ProjectAnalysis(Base):
     error_message = Column(Text, nullable=True)
     created_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(UTCDateTime, default=lambda: datetime.now(timezone.utc))
+
+    # New columns
+    problem_solved = Column(Text, nullable=True)
+    project_type = Column(String, nullable=True)
+    responsibilities = Column(Text, nullable=True)
+    key_features = Column(Text, nullable=True)
+    used_llm_or_vector = Column(Boolean, default=False)

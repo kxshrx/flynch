@@ -18,14 +18,18 @@ from models.project_analysis import ProjectAnalysis
 from models.repository import Repository
 
 class ProjectDetails(BaseModel):
-    """Pydantic model for structured project analysis output"""
     title: str = Field(description="Professional project title (max 80 chars)")
-    summary: str = Field(description="Detailed project summary highlighting achievements (200-400 words)")
-    tech_stack: List[str] = Field(description="List of technologies, frameworks, and tools used")
-    skills: List[str] = Field(description="Transferable skills demonstrated in this project")
+    summary: str = Field(description="Detailed project summary (200-400 words)")
+    tech_stack: List[str] = Field(description="Technologies, frameworks, and tools used")
+    skills: List[str] = Field(description="Transferable skills demonstrated")
     domain: str = Field(description="Primary domain/industry category")
-    impact: str = Field(description="Quantifiable impact or results achieved (100-200 words)")
-
+    impact: str = Field(description="Quantifiable impact or results (100-200 words)")
+    problem_solved: str = Field(description="Explicit problem the project addresses")
+    project_type: str = Field(description="Project category (Web App, API, etc.)")
+    responsibilities: List[str] = Field(description="Developer's specific responsibilities")
+    key_features: List[str] = Field(description="Key features and capabilities")
+    used_llm_or_vector: bool = Field(description="Uses LLM or vector database technology")
+    
 class RepositoryAnalyzer:
     def __init__(self, groq_api_key: str):
         self.groq_api_key = groq_api_key
@@ -55,25 +59,35 @@ class RepositoryAnalyzer:
             self.prompt = ChatPromptTemplate.from_messages([
                 ("system", """You are an expert technical analyst specializing in software project evaluation for professional resumes.
 
-Analyze the provided repository information and extract structured data that highlights the technical achievements, skills, and business impact.
+                Analyze the provided repository information and extract structured data that highlights technical achievements, skills, and business impact.
 
-{format_instructions}
+                {format_instructions}
 
-Focus on:
-- Technical complexity and innovation
-- Problem-solving approach
-- Technologies and frameworks used
-- Measurable outcomes or impact
-- Professional skills demonstrated
+                Focus on:
+                - Technical complexity and innovation
+                - Problem-solving approach
+                - Technologies and frameworks used
+                - Measurable outcomes or impact
+                - Professional skills demonstrated
+                - Specific responsibilities and features
+                - Whether the project uses LLM/AI/vector database technology
 
-Provide accurate, professional descriptions suitable for a software engineer's resume."""),
-                ("human", """Repository: {repo_name}
-Description: {description}
-README Content: {readme_content}
-Code Structure: {code_content}
+                Provide accurate, professional descriptions suitable for a software engineer's resume."""),
+                    ("human", """Repository: {repo_name}
+                Description: {description}
+                README Content: {readme_content}
+                Code Structure: {code_content}
 
-Analyze this project and provide structured information for a professional resume.""")
+                Analyze this project and provide structured information including:
+                - What problem it solves
+                - Project type/category
+                - Developer's specific responsibilities
+                - Key features and capabilities
+                - Whether it uses LLM or vector database technology
+
+                Return a complete JSON object with all required fields.""")
             ])
+
             
             # Create the analysis chain
             self.analysis_chain = self.prompt | self.llm | self.parser
@@ -197,15 +211,22 @@ Analyze this project and provide structured information for a professional resum
             
             # Update analysis record
             analysis = db.query(ProjectAnalysis).filter_by(id=analysis_id).first()
-            analysis.title = analysis_result['title'][:255]  # Ensure field length limits
+# Update analysis record with new fields
+            analysis.title = analysis_result['title'][:255]
             analysis.summary = analysis_result['summary']
             analysis.tech_stack = json.dumps(analysis_result['tech_stack'])
             analysis.skills = json.dumps(analysis_result['skills'])
             analysis.domain = analysis_result['domain'][:255]
             analysis.impact = analysis_result['impact']
+            analysis.problem_solved = analysis_result.get('problem_solved', '')
+            analysis.project_type = analysis_result.get('project_type', '')[:100]
+            analysis.responsibilities = json.dumps(analysis_result.get('responsibilities', []))
+            analysis.key_features = json.dumps(analysis_result.get('key_features', []))
+            analysis.used_llm_or_vector = analysis_result.get('used_llm_or_vector', False)
             analysis.analysis_status = "completed"
             analysis.updated_at = datetime.now(timezone.utc)
-            
+
+                        
             db.commit()
             
             print(f"Successfully analyzed: {repo.repo_name}")
