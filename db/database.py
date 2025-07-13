@@ -15,4 +15,6 @@ def get_database():
         db.close()
 
 def create_tables():
+    from models.repository import Repository
+    from models.project_analysis import ProjectAnalysis
     Base.metadata.create_all(bind=engine)

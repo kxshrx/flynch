@@ -57,15 +57,12 @@ class GitHubFetcher:
     
     def meets_filtering_criteria(self, repo_data: Dict, readme_content: Optional[str]) -> bool:
         """
-        Filtering criteria based on updated requirements:
-        - Has README OR has description
-        - Skip repos with neither README nor description
+        Updated filtering criteria: Fetch all public repositories
+        No filtering based on README or description content
         """
-        has_readme = readme_content is not None and readme_content.strip() != ""
-        has_description = repo_data.get("description") is not None and repo_data.get("description").strip() != ""
+        return True
+
         
-        return has_readme or has_description
-    
     async def fetch_and_filter_repositories(self, username: str, db: Session) -> List[Dict]:
         """Fetch repositories and only process those that need updates"""
         repositories = []
@@ -126,28 +123,18 @@ class GitHubFetcher:
                             needs_processing = False
                     
                     if needs_processing:
-                        # Fetch additional data only for repositories that need updates
+                        # Fetch additional data for ALL repositories (no filtering)
                         readme_content = await self.fetch_readme_content(username, repo_name)
+                        languages = await self.fetch_repository_languages(username, repo_name)
                         
-                        # Apply filtering criteria
-                        if self.meets_filtering_criteria(repo, readme_content):
-                            # Fetch languages for eligible repos
-                            languages = await self.fetch_repository_languages(username, repo_name)
-                            
-                            # Add enhanced data to repo
-                            repo['readme_content'] = readme_content
-                            repo['languages_list'] = languages
-                            repo['has_readme'] = readme_content is not None
-                            repo['is_eligible'] = True
-                            
-                            repositories.append(repo)
-                            print(f"✅ Queued for update: {repo_name}")
-                        else:
-                            # Repository no longer meets criteria - mark for deletion
-                            repo['is_eligible'] = False
-                            repo['should_delete'] = True
-                            repositories.append(repo)
-                            print(f"🗑️  Marked for deletion: {repo_name} (no longer meets criteria)")
+                        # Add enhanced data to repo - ALL repos are now eligible
+                        repo['readme_content'] = readme_content
+                        repo['languages_list'] = languages
+                        repo['has_readme'] = readme_content is not None
+                        repo['is_eligible'] = True
+                        
+                        repositories.append(repo)
+                        print(f"✅ Queued for update: {repo_name}")
                 
                 page += 1
         
