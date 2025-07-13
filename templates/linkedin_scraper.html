@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LinkedIn Profile Scraper</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background-color: #f6f8fa;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .input-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+        .url-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .btn {
+            background: #0077b5;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 16px;
+        }
+        .btn:hover {
+            background: #005885;
+        }
+        .btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .profile-card {
+            border: 1px solid #e1e4e8;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 6px;
+            background: #f6f8fa;
+        }
+        .profile-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #0077b5;
+            margin-bottom: 8px;
+        }
+        .profile-headline {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 0 10px 0;
+            color: #333;
+        }
+        .experience-item, .education-item, .certification-item {
+            border-left: 3px solid #0077b5;
+            padding-left: 15px;
+            margin: 15px 0;
+        }
+        .item-title {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .item-subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+        .item-date {
+            color: #888;
+            font-size: 12px;
+            font-style: italic;
+        }
+        .item-description {
+            margin-top: 8px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LinkedIn Profile Scraper</h1>
+        
+        <div class="input-section">
+            <h3>Scrape LinkedIn Profile</h3>
+            <input 
+                type="text" 
+                id="linkedin-url" 
+                class="url-input"
+                placeholder="Enter LinkedIn public profile URL (e.g., https://www.linkedin.com/in/username/)"
+            />
+            <button class="btn" id="scrape-btn" onclick="scrapeLinkedIn()">
+                Scrape Profile
+            </button>
+        </div>
+        
+        <div id="status-message" style="display: none;"></div>
+        
+        <div id="profile-display" style="display: none;">
+            <h2>Profile Information</h2>
+            <div id="profile-content"></div>
+        </div>
+        
+        <div id="profiles-list">
+            <h2>Scraped Profiles</h2>
+            <div id="profiles-container">Loading profiles...</div>
+        </div>
+    </div>
+
+    <script>
+        async function scrapeLinkedIn() {
+            const urlInput = document.getElementById('linkedin-url');
+            const scrapeBtn = document.getElementById('scrape-btn');
+            const statusDiv = document.getElementById('status-message');
+            
+            const profileUrl = urlInput.value.trim();
+            
+            if (!profileUrl) {
+                showStatus('Please enter a LinkedIn profile URL', 'error');
+                return;
+            }
+            
+            if (!isValidLinkedInUrl(profileUrl)) {
+                showStatus('Please enter a valid LinkedIn profile URL', 'error');
+                return;
+            }
+            
+            scrapeBtn.disabled = true;
+            scrapeBtn.textContent = 'Scraping...';
+            
+            try {
+                const response = await fetch('/linkedin/scrape', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        profile_url: profileUrl
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showStatus('Profile scraped successfully!', 'success');
+                    urlInput.value = '';
+                    await loadProfileDetails(result.profile_id);
+                    await loadProfiles();
+                } else {
+                    showStatus(`Scraping failed: ${result.detail}`, 'error');
+                }
+            } catch (error) {
+                showStatus('Scraping request failed', 'error');
+                console.error('Error:', error);
+            } finally {
+                scrapeBtn.disabled = false;
+                scrapeBtn.textContent = 'Scrape Profile';
+            }
+        }
+        
+        function isValidLinkedInUrl(url) {
+            const linkedinPattern = /^https?:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9\-]+\/?$/;
+            return linkedinPattern.test(url);
+        }
+        
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        async function loadProfiles() {
+            try {
+                const response = await fetch('/linkedin/profiles');
+                const data = await response.json();
+                
+                const container = document.getElementById('profiles-container');
+                
+                if (data.profiles.length === 0) {
+                    container.innerHTML = '<p>No profiles scraped yet.</p>';
+                    return;
+                }
+                
+                container.innerHTML = '';
+                
+                data.profiles.forEach(profile => {
+                    const profileCard = document.createElement('div');
+                    profileCard.className = 'profile-card';
+                    profileCard.innerHTML = `
+                        <div class="profile-name">${profile.name}</div>
+                        <div class="profile-headline">${profile.headline}</div>
+                        <div class="item-subtitle">${profile.location}</div>
+                        <div class="item-date">Scraped: ${new Date(profile.created_at).toLocaleDateString()}</div>
+                        <button class="btn" onclick="loadProfileDetails('${profile.id}')" style="margin-top: 10px;">
+                            View Details
+                        </button>
+                    `;
+                    container.appendChild(profileCard);
+                });
+                
+            } catch (error) {
+                console.error('Error loading profiles:', error);
+                document.getElementById('profiles-container').innerHTML = 
+                    '<p>Failed to load profiles.</p>';
+            }
+        }
+        
+        async function loadProfileDetails(profileId) {
+            try {
+                const response = await fetch(`/linkedin/profile/${profileId}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayProfileDetails(data);
+                } else {
+                    showStatus('Failed to load profile details', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading profile details:', error);
+                showStatus('Failed to load profile details', 'error');
+            }
+        }
+        
+        function displayProfileDetails(data) {
+            const profileDisplay = document.getElementById('profile-display');
+            const profileContent = document.getElementById('profile-content');
+            
+            let html = `
+                <div class="profile-card">
+                    <div class="profile-name">${data.profile.name}</div>
+                    <div class="profile-headline">${data.profile.headline}</div>
+                    <div class="item-subtitle">${data.profile.location}</div>
+                    <div class="item-description">${data.profile.summary}</div>
+                </div>
+            `;
+            
+            if (data.experience.length > 0) {
+                html += '<div class="section-title">Experience</div>';
+                data.experience.forEach(exp => {
+                    html += `
+                        <div class="experience-item">
+                            <div class="item-title">${exp.job_title}</div>
+                            <div class="item-subtitle">${exp.company_name}</div>
+                            <div class="item-date">${exp.start_date} - ${exp.end_date}</div>
+                            <div class="item-description">${exp.description}</div>
+                        </div>
+                    `;
+                });
+            }
+            
+            if (data.education.length > 0) {
+                html += '<div class="section-title">Education</div>';
+                data.education.forEach(edu => {
+                    html += `
+                        <div class="education-item">
+                            <div class="item-title">${edu.school_name}</div>
+                            <div class="item-subtitle">${edu.degree} ${edu.field_of_study}</div>
+                            <div class="item-date">${edu.start_year} - ${edu.end_year}</div>
+                        </div>
+                    `;
+                });
+            }
+            
+            if (data.certifications.length > 0) {
+                html += '<div class="section-title">Certifications</div>';
+                data.certifications.forEach(cert => {
+                    html += `
+                        <div class="certification-item">
+                            <div class="item-title">${cert.name}</div>
+                            <div class="item-subtitle">${cert.issuer}</div>
+                            <div class="item-date">Issued: ${cert.issue_date}</div>
+                        </div>
+                    `;
+                });
+            }
+            
+            profileContent.innerHTML = html;
+            profileDisplay.style.display = 'block';
+        }
+        
+        // Load profiles on page load
+        loadProfiles();
+    </script>
+</body>
+</html>
+    
