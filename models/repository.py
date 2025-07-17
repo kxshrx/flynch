@@ -3,11 +3,13 @@ from sqlalchemy.types import TypeDecorator, DateTime as SQLDateTime
 from db.database import Base
 from datetime import datetime, timezone
 
+
 class UTCDateTime(TypeDecorator):
     """Custom SQLAlchemy type that ensures all datetimes are stored as UTC"""
+
     impl = SQLDateTime
     cache_ok = True
-    
+
     def process_bind_param(self, value, dialect):
         if value is not None:
             if value.tzinfo is None:
@@ -16,15 +18,16 @@ class UTCDateTime(TypeDecorator):
                 value = value.astimezone(timezone.utc)
             return value.replace(tzinfo=None)
         return value
-    
+
     def process_result_value(self, value, dialect):
         if value is not None:
             return value.replace(tzinfo=timezone.utc)
         return value
 
+
 class Repository(Base):
     __tablename__ = "repositories"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     repo_id = Column(Integer, unique=True, index=True)
     repo_name = Column(String, index=True)

@@ -176,11 +176,21 @@ cython_debug/
 *.db
 *.sqlite
 *.sqlite3
+github_repos.db
+linkedin.db
 
 # Environment variables
 .env
 .env.local
 .env.*.local
+
+# HTML build files
+index.html.backup
+*.html.bak
+
+# Project specific
+templates/
+streamlit_app.py
 
 # macOS
 .DS_Store

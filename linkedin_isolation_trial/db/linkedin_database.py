@@ -1,8 +1,11 @@
-from sqlalchemy import Column, String, Text, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
-from db.linkedin_database import LinkedInBase
+# db/linkedin_database.py
+
+from sqlalchemy import Column, String, Text, DateTime, ForeignKey, create_engine
+from sqlalchemy.orm import relationship, declarative_base, sessionmaker
 from datetime import datetime, timezone
 import uuid
+
+LinkedInBase = declarative_base()
 
 
 class LinkedInProfile(LinkedInBase):
@@ -82,3 +85,8 @@ class LinkedInCertification(LinkedInBase):
     credential_url = Column(Text)
 
     profile = relationship("LinkedInProfile", back_populates="certifications")
+
+
+# Engine and sessionmaker for isolated DB
+engine = create_engine("sqlite:///linkedin.db")
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

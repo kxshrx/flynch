@@ -1,5 +1,7 @@
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv, find_dotenv
 import os
 
@@ -16,6 +18,15 @@ from db.linkedin_database import create_linkedin_tables
 
 app = FastAPI(title="GitHub Repository Manager")
 
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Create both databases
 create_tables()
 create_linkedin_tables()
@@ -25,21 +36,12 @@ app.include_router(github_router)
 app.include_router(analysis_router)
 app.include_router(linkedin_router)
 
-@app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard():
-    with open("dashboard.html", "r") as file:
-        return HTMLResponse(content=file.read())
 
 @app.get("/")
 async def root():
-    return {"message": "GitHub Repository Manager API"}
+    return FileResponse("index.html")
 
-@app.get("/repo-selection", response_class=HTMLResponse)
-async def repo_selection():
-    with open("templates/repo_selection.html", "r") as file:
-        return HTMLResponse(content=file.read())
 
-@app.get("/linkedin-scraper", response_class=HTMLResponse)
-async def linkedin_scraper():
-    with open("templates/linkedin_scraper.html", "r") as file:
-        return HTMLResponse(content=file.read())
+@app.get("/dashboard")
+async def dashboard():
+    return FileResponse("index.html")

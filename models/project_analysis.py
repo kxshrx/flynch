@@ -4,10 +4,11 @@ from db.database import Base
 from datetime import datetime, timezone
 import uuid
 
+
 class UTCDateTime(TypeDecorator):
     impl = SQLDateTime
     cache_ok = True
-    
+
     def process_bind_param(self, value, dialect):
         if value is not None:
             if value.tzinfo is None:
@@ -16,21 +17,23 @@ class UTCDateTime(TypeDecorator):
                 value = value.astimezone(timezone.utc)
             return value.replace(tzinfo=None)
         return value
-    
+
     def process_result_value(self, value, dialect):
         if value is not None:
             return value.replace(tzinfo=timezone.utc)
         return value
+
+
 class ProjectAnalysis(Base):
     __tablename__ = "project_analysis"
-    
+
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     repo_id = Column(Integer, nullable=False)
     repo_name = Column(String, nullable=False)
     title = Column(String, nullable=False)
     summary = Column(Text, nullable=False)
     tech_stack = Column(Text, nullable=False)  # JSON string
-    skills = Column(Text, nullable=False)      # JSON string
+    skills = Column(Text, nullable=False)  # JSON string
     domain = Column(String, nullable=False)
     impact = Column(Text, nullable=False)
     user_github_username = Column(String, nullable=False)

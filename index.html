@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flynch - Professional Profile Manager</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: white;
+        color: black;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background-color: white;
+        padding: 20px;
+        border: 1px solid black;
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+        border-bottom: 1px solid black;
+        padding-bottom: 20px;
+      }
+      .nav {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-bottom: 30px;
+      }
+      .nav button {
+        padding: 10px 20px;
+        border: 1px solid black;
+        background-color: white;
+        color: black;
+        cursor: pointer;
+      }
+      .nav button.active {
+        background-color: black;
+        color: white;
+      }
+      .section {
+        display: none;
+      }
+      .section.active {
+        display: block;
+      }
+      .github-section,
+      .linkedin-section,
+      .analysis-section {
+        margin-bottom: 30px;
+        padding: 20px;
+        border: 1px solid black;
+      }
+      .status {
+        padding: 10px;
+        margin: 10px 0;
+        border: 1px solid black;
+      }
+      .status.success {
+        background-color: white;
+        color: black;
+      }
+      .status.error {
+        background-color: white;
+        color: black;
+      }
+      .status.warning {
+        background-color: white;
+        color: black;
+      }
+      .status.info {
+        background-color: white;
+        color: black;
+      }
+      button {
+        padding: 8px 16px;
+        margin: 5px;
+        border: 1px solid black;
+        background-color: white;
+        color: black;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: black;
+        color: white;
+      }
+      button:disabled {
+        background-color: white;
+        color: black;
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+      .repo-item,
+      .profile-item,
+      .analysis-item {
+        border: 1px solid black;
+        margin: 10px 0;
+        padding: 15px;
+        background-color: white;
+      }
+      .repo-header,
+      .profile-header,
+      .analysis-header {
+        font-weight: bold;
+        font-size: 18px;
+        margin-bottom: 10px;
+      }
+      .repo-details,
+      .profile-details {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .detail-item {
+        padding: 5px 0;
+      }
+      .detail-label {
+        font-weight: bold;
+        color: black;
+      }
+      input[type="file"] {
+        margin: 10px 0;
+        padding: 8px;
+        border: 1px solid black;
+        width: 100%;
+      }
+      input[type="checkbox"] {
+        margin-right: 10px;
+      }
+      .loading {
+        text-align: center;
+        padding: 20px;
+        color: black;
+      }
+      .two-column {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      .experience-item,
+      .education-item,
+      .cert-item {
+        margin: 8px 0;
+        padding: 10px;
+        background-color: white;
+        border: 1px solid black;
+      }
+      .readme-preview {
+        background-color: white;
+        padding: 15px;
+        border: 1px solid black;
+        margin-top: 10px;
+        font-family: monospace;
+        white-space: pre-wrap;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+      .repo-checkbox {
+        margin: 10px 0;
+        padding: 10px;
+        border: 1px solid black;
+        background-color: white;
+      }
+      .repo-checkbox input {
+        margin-right: 10px;
+      }
+      .repo-checkbox label {
+        font-weight: bold;
+        cursor: pointer;
+      }
+      .analysis-summary {
+        margin: 10px 0;
+        line-height: 1.6;
+      }
+      .tech-stack,
+      .skills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin: 10px 0;
+      }
+      .tech-item,
+      .skill-item {
+        background-color: black;
+        color: white;
+        padding: 4px 8px;
+        font-size: 12px;
+        border: 1px solid black;
+      }
+      .analysis-status {
+        font-weight: bold;
+        padding: 5px 10px;
+        display: inline-block;
+        margin: 5px 0;
+        border: 1px solid black;
+      }
+      .status-completed {
+        background-color: white;
+        color: black;
+      }
+      .status-pending {
+        background-color: white;
+        color: black;
+      }
+      .status-failed {
+        background-color: white;
+        color: black;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Flynch - Professional Profile Manager</h1>
+        <p>Connect GitHub repositories and upload LinkedIn profiles</p>
+      </div>
+
+      <div class="nav">
+        <button
+          onclick="showSection('dashboard')"
+          class="active"
+          id="nav-dashboard"
+        >
+          Dashboard
+        </button>
+        <button onclick="showSection('github')" id="nav-github">GitHub</button>
+        <button onclick="showSection('linkedin')" id="nav-linkedin">
+          LinkedIn
+        </button>
+        <button onclick="showSection('analysis')" id="nav-analysis">
+          Project Analysis
+        </button>
+      </div>
+
+      <!-- Dashboard Section -->
+      <div id="dashboard" class="section active">
+        <h2>Dashboard Overview</h2>
+        <div class="two-column">
+          <div class="github-section">
+            <h3>GitHub Status</h3>
+            <div id="github-stats">Loading...</div>
+          </div>
+          <div class="linkedin-section">
+            <h3>LinkedIn Status</h3>
+            <div id="linkedin-stats">Loading...</div>
+          </div>
+        </div>
+        <div class="analysis-section">
+          <h3>Project Analysis Status</h3>
+          <div id="analysis-stats">Loading...</div>
+        </div>
+      </div>
+
+      <!-- GitHub Section -->
+      <div id="github" class="section">
+        <h2>GitHub Integration</h2>
+
+        <div class="github-section">
+          <h3>Connection Status</h3>
+          <div id="github-connection-status">Checking connection...</div>
+          <button onclick="connectGitHub()" id="connect-github-btn">
+            Connect GitHub
+          </button>
+          <button onclick="refreshGitHub()" id="refresh-github-btn" disabled>
+            Refresh Repositories
+          </button>
+        </div>
+
+        <div class="github-section">
+          <h3>Repositories</h3>
+          <div id="github-repos">Loading repositories...</div>
+        </div>
+      </div>
+
+      <!-- LinkedIn Section -->
+      <div id="linkedin" class="section">
+        <h2>LinkedIn Profile Management</h2>
+
+        <div class="linkedin-section">
+          <h3>Upload LinkedIn PDF</h3>
+          <input type="file" id="linkedin-pdf" accept=".pdf" />
+          <button onclick="uploadLinkedInPDF()">Process PDF</button>
+          <div id="upload-status"></div>
+        </div>
+
+        <div class="linkedin-section">
+          <h3>LinkedIn Profiles</h3>
+          <div id="linkedin-profiles">Loading profiles...</div>
+        </div>
+      </div>
+
+      <!-- Project Analysis Section -->
+      <div id="analysis" class="section">
+        <h2>Project Analysis</h2>
+
+        <div class="analysis-section">
+          <h3>Repository Selection</h3>
+          <div id="repo-selection">
+            <div id="connection-check">Checking GitHub connection...</div>
+            <div id="selectable-repos" style="display: none">
+              <p>Select repositories to analyze:</p>
+              <div id="repo-list"></div>
+              <button
+                onclick="analyzeSelectedRepos()"
+                id="analyze-btn"
+                disabled
+              >
+                Analyze Selected Repositories
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="analysis-section">
+          <h3>Analysis Results</h3>
+          <div id="analysis-results">Loading analysis results...</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const API_BASE = "http://localhost:8000";
+      let currentSection = "dashboard";
+
+      // Navigation
+      function showSection(section) {
+        // Hide all sections
+        document
+          .querySelectorAll(".section")
+          .forEach((s) => s.classList.remove("active"));
+        document
+          .querySelectorAll(".nav button")
+          .forEach((b) => b.classList.remove("active"));
+
+        // Show selected section
+        document.getElementById(section).classList.add("active");
+        document.getElementById(`nav-${section}`).classList.add("active");
+
+        currentSection = section;
+
+        // Load section data
+        if (section === "dashboard") loadDashboard();
+        if (section === "github") loadGitHubSection();
+        if (section === "linkedin") loadLinkedInSection();
+        if (section === "analysis") loadAnalysisSection();
+      }
+
+      // Dashboard functions
+      async function loadDashboard() {
+        try {
+          // Load GitHub stats
+          const githubResponse = await fetch(
+            `${API_BASE}/github/connection-status`
+          );
+          const githubData = await githubResponse.json();
+
+          let githubStatsHtml = "";
+          if (githubData.connected) {
+            githubStatsHtml = `
+                        <div class="status success">Connected as: ${
+                          githubData.username
+                        }</div>
+                        <div class="detail-item">Repositories: ${
+                          githubData.repository_count
+                        }</div>
+                        <div class="detail-item">Last Sync: ${
+                          githubData.last_fetch
+                            ? new Date(githubData.last_fetch).toLocaleString()
+                            : "Never"
+                        }</div>
+                    `;
+          } else {
+            githubStatsHtml =
+              '<div class="status warning">Not connected to GitHub</div>';
+          }
+          document.getElementById("github-stats").innerHTML = githubStatsHtml;
+
+          // Load LinkedIn stats
+          const linkedinResponse = await fetch(`${API_BASE}/linkedin/profiles`);
+          const linkedinData = await linkedinResponse.json();
+
+          const linkedinStatsHtml = `
+                    <div class="status info">Total Profiles: ${linkedinData.total_count}</div>
+                `;
+          document.getElementById("linkedin-stats").innerHTML =
+            linkedinStatsHtml;
+
+          // Load Analysis stats
+          const analysisResponse = await fetch(`${API_BASE}/analyzed-projects`);
+          const analysisData = await analysisResponse.json();
+
+          const analysisStatsHtml = `
+                    <div class="status info">Total Projects Analyzed: ${analysisData.total_count}</div>
+                `;
+          document.getElementById("analysis-stats").innerHTML =
+            analysisStatsHtml;
+        } catch (error) {
+          console.error("Error loading dashboard:", error);
+          document.getElementById("github-stats").innerHTML =
+            '<div class="status error">Error loading GitHub data</div>';
+          document.getElementById("linkedin-stats").innerHTML =
+            '<div class="status error">Error loading LinkedIn data</div>';
+          document.getElementById("analysis-stats").innerHTML =
+            '<div class="status error">Error loading Analysis data</div>';
+        }
+      }
+
+      // GitHub functions
+      async function loadGitHubSection() {
+        await checkGitHubConnection();
+        await loadGitHubRepos();
+      }
+
+      async function checkGitHubConnection() {
+        try {
+          const response = await fetch(`${API_BASE}/github/connection-status`);
+          const data = await response.json();
+
+          const statusEl = document.getElementById("github-connection-status");
+          const connectBtn = document.getElementById("connect-github-btn");
+          const refreshBtn = document.getElementById("refresh-github-btn");
+
+          if (data.connected) {
+            statusEl.innerHTML = `<div class="status success">Connected as: ${data.username}</div>`;
+            connectBtn.textContent = "Reconnect GitHub";
+            refreshBtn.disabled = false;
+          } else {
+            statusEl.innerHTML =
+              '<div class="status warning">Not connected to GitHub</div>';
+            connectBtn.textContent = "Connect GitHub";
+            refreshBtn.disabled = true;
+          }
+        } catch (error) {
+          console.error("Error checking GitHub connection:", error);
+          document.getElementById("github-connection-status").innerHTML =
+            '<div class="status error">Error checking connection</div>';
+        }
+      }
+
+      async function connectGitHub() {
+        window.open(`${API_BASE}/auth/github`, "_blank");
+        // Check connection after a delay
+        setTimeout(checkGitHubConnection, 3000);
+      }
+
+      async function refreshGitHub() {
+        try {
+          const statusResponse = await fetch(
+            `${API_BASE}/github/connection-status`
+          );
+          const statusData = await statusResponse.json();
+
+          if (!statusData.connected) {
+            alert("Please connect to GitHub first");
+            return;
+          }
+
+          const response = await fetch(
+            `${API_BASE}/github/refresh/${statusData.username}`,
+            {
+              method: "POST",
+            }
+          );
+          const data = await response.json();
+
+          alert(
+            `Refresh completed: ${data.processed} processed, ${data.skipped} skipped, ${data.deleted} deleted`
+          );
+          await loadGitHubRepos();
+        } catch (error) {
+          console.error("Error refreshing GitHub:", error);
+          alert("Error refreshing repositories");
+        }
+      }
+
+      async function loadGitHubRepos() {
+        try {
+          const response = await fetch(`${API_BASE}/github/repos`);
+          const data = await response.json();
+
+          const reposEl = document.getElementById("github-repos");
+
+          if (!data.repos || data.repos.length === 0) {
+            reposEl.innerHTML =
+              '<div class="status info">No repositories found. Connect to GitHub and refresh.</div>';
+            return;
+          }
+
+          let reposHtml = `<div class="status info">Total: ${data.total_count} repositories, showing: ${data.displayed_count}</div>`;
+
+          data.repos.forEach((repo) => {
+            reposHtml += `
+                        <div class="repo-item">
+                            <div class="repo-header">${repo.name}</div>
+                            <div class="repo-details">
+                                <div class="detail-item">
+                                    <span class="detail-label">Description:</span> ${
+                                      repo.description
+                                    }
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Language:</span> ${
+                                      repo.language
+                                    }
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Stars:</span> ${
+                                      repo.stars
+                                    }
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Forks:</span> ${
+                                      repo.forks
+                                    }
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Updated:</span> ${new Date(
+                                      repo.updated
+                                    ).toLocaleDateString()}
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">README:</span> ${
+                                      repo.has_readme
+                                        ? `Yes (${repo.readme_length} chars)`
+                                        : "No"
+                                    }
+                                </div>
+                            </div>
+                            <div class="detail-item">
+                                <a href="${
+                                  repo.url
+                                }" target="_blank">View Repository</a>
+                            </div>
+                        </div>
+                    `;
+          });
+
+          reposEl.innerHTML = reposHtml;
+        } catch (error) {
+          console.error("Error loading repositories:", error);
+          document.getElementById("github-repos").innerHTML =
+            '<div class="status error">Error loading repositories</div>';
+        }
+      }
+
+      // LinkedIn functions
+      async function loadLinkedInSection() {
+        await loadLinkedInProfiles();
+      }
+
+      async function uploadLinkedInPDF() {
+        const fileInput = document.getElementById("linkedin-pdf");
+        const statusEl = document.getElementById("upload-status");
+
+        if (!fileInput.files[0]) {
+          statusEl.innerHTML =
+            '<div class="status error">Please select a PDF file</div>';
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("pdf_file", fileInput.files[0]);
+        formData.append("profile_url", "");
+
+        try {
+          statusEl.innerHTML =
+            '<div class="status info">Processing PDF...</div>';
+
+          const response = await fetch(`${API_BASE}/linkedin/upload-pdf`, {
+            method: "POST",
+            body: formData,
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            statusEl.innerHTML = `<div class="status success">PDF processed successfully! Profile ID: ${data.profile_id}</div>`;
+            fileInput.value = "";
+            await loadLinkedInProfiles();
+          } else {
+            statusEl.innerHTML = `<div class="status error">Error: ${data.detail}</div>`;
+          }
+        } catch (error) {
+          console.error("Error uploading PDF:", error);
+          statusEl.innerHTML =
+            '<div class="status error">Error uploading PDF</div>';
+        }
+      }
+
+      async function loadLinkedInProfiles() {
+        try {
+          const response = await fetch(`${API_BASE}/linkedin/profiles`);
+          const data = await response.json();
+
+          const profilesEl = document.getElementById("linkedin-profiles");
+
+          if (!data.profiles || data.profiles.length === 0) {
+            profilesEl.innerHTML =
+              '<div class="status info">No LinkedIn profiles found. Upload a PDF above.</div>';
+            return;
+          }
+
+          let profilesHtml = `<div class="status info">Total profiles: ${data.total_count}</div>`;
+
+          data.profiles.forEach((profile) => {
+            profilesHtml += `
+                        <div class="profile-item">
+                            <div class="profile-header">${profile.name}</div>
+                            <div class="profile-details">
+                                <div class="detail-item">
+                                    <span class="detail-label">Headline:</span> ${
+                                      profile.headline || "N/A"
+                                    }
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Location:</span> ${
+                                      profile.location || "N/A"
+                                    }
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Created:</span> ${new Date(
+                                      profile.created_at
+                                    ).toLocaleDateString()}
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Profile URL:</span> ${
+                                      profile.profile_url || "N/A"
+                                    }
+                                </div>
+                            </div>
+                            <button onclick="loadProfileDetails('${
+                              profile.id
+                            }')">View Details</button>
+                        </div>
+                    `;
+          });
+
+          profilesEl.innerHTML = profilesHtml;
+        } catch (error) {
+          console.error("Error loading profiles:", error);
+          document.getElementById("linkedin-profiles").innerHTML =
+            '<div class="status error">Error loading profiles</div>';
+        }
+      }
+
+      async function loadProfileDetails(profileId) {
+        try {
+          const response = await fetch(
+            `${API_BASE}/linkedin/profile/${profileId}`
+          );
+          const data = await response.json();
+
+          let detailsHtml = `
+                    <div class="profile-item">
+                        <div class="profile-header">${data.profile.name}</div>
+                        <div class="profile-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Headline:</span> ${
+                                  data.profile.headline || "N/A"
+                                }
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Location:</span> ${
+                                  data.profile.location || "N/A"
+                                }
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Summary:</span> ${
+                                  data.profile.summary || "N/A"
+                                }
+                            </div>
+                        </div>
+                `;
+
+          if (data.experience && data.experience.length > 0) {
+            detailsHtml += "<h4>Experience:</h4>";
+            data.experience.forEach((exp) => {
+              detailsHtml += `
+                            <div class="experience-item">
+                                <strong>${exp.job_title}</strong> at <strong>${
+                exp.company_name
+              }</strong><br>
+                                <small>${exp.duration || "N/A"} | ${
+                exp.location || "N/A"
+              }</small><br>
+                                ${exp.description || "No description"}
+                            </div>
+                        `;
+            });
+          }
+
+          if (data.education && data.education.length > 0) {
+            detailsHtml += "<h4>Education:</h4>";
+            data.education.forEach((edu) => {
+              detailsHtml += `
+                            <div class="education-item">
+                                <strong>${edu.degree}</strong> ${
+                edu.field_of_study ? "in " + edu.field_of_study : ""
+              }<br>
+                                <small>${edu.school_name} | ${
+                edu.start_year || ""
+              }-${edu.end_year || ""}</small><br>
+                                ${edu.description || ""}
+                            </div>
+                        `;
+            });
+          }
+
+          if (data.certifications && data.certifications.length > 0) {
+            detailsHtml += "<h4>Certifications:</h4>";
+            data.certifications.forEach((cert) => {
+              detailsHtml += `
+                            <div class="cert-item">
+                                <strong>${cert.name}</strong> from <strong>${
+                cert.issuer
+              }</strong><br>
+                                <small>Issued: ${
+                                  cert.issue_date || "N/A"
+                                } | ID: ${cert.credential_id || "N/A"}</small>
+                            </div>
+                        `;
+            });
+          }
+
+          detailsHtml += "</div>";
+
+          // Replace the profile item with detailed view
+          const profileItems = document.querySelectorAll(".profile-item");
+          profileItems.forEach((item, index) => {
+            if (
+              item.querySelector("button") &&
+              item
+                .querySelector("button")
+                .onclick.toString()
+                .includes(profileId)
+            ) {
+              item.outerHTML = detailsHtml;
+            }
+          });
+        } catch (error) {
+          console.error("Error loading profile details:", error);
+          alert("Error loading profile details");
+        }
+      }
+
+      // Initialize the page
+      window.onload = function () {
+        loadDashboard();
+      };
+
+      // Project Analysis functions
+      let selectedRepos = new Set();
+
+      async function loadAnalysisSection() {
+        await checkAnalysisConnection();
+        await loadAnalysisResults();
+      }
+
+      async function checkAnalysisConnection() {
+        try {
+          const response = await fetch(`${API_BASE}/check-github-connection`);
+          const data = await response.json();
+
+          const connectionEl = document.getElementById("connection-check");
+          const selectableEl = document.getElementById("selectable-repos");
+
+          if (data.connected) {
+            connectionEl.innerHTML = `<div class="status success">GitHub connected as: ${data.username}</div>`;
+            selectableEl.style.display = "block";
+            await loadSelectableRepos();
+          } else {
+            connectionEl.innerHTML =
+              '<div class="status warning">GitHub not connected. Please connect GitHub first in the GitHub section.</div>';
+            selectableEl.style.display = "none";
+          }
+        } catch (error) {
+          console.error("Error checking analysis connection:", error);
+          document.getElementById("connection-check").innerHTML =
+            '<div class="status error">Error checking connection</div>';
+        }
+      }
+
+      async function loadSelectableRepos() {
+        try {
+          const response = await fetch(`${API_BASE}/github/repos`);
+          const data = await response.json();
+
+          const repoListEl = document.getElementById("repo-list");
+
+          if (!data.repos || data.repos.length === 0) {
+            repoListEl.innerHTML =
+              '<div class="status info">No repositories available for analysis.</div>';
+            return;
+          }
+
+          let repoListHtml = "";
+          data.repos.forEach((repo) => {
+            repoListHtml += `
+                        <div class="repo-checkbox">
+                            <input type="checkbox" id="repo-${
+                              repo.name
+                            }" value="${
+              repo.name
+            }" onchange="toggleRepoSelection('${repo.name}')">
+                            <label for="repo-${repo.name}">
+                                <strong>${repo.name}</strong>
+                                <br><small>${
+                                  repo.description || "No description"
+                                }</small>
+                                <br><small>Language: ${
+                                  repo.language || "N/A"
+                                } | Stars: ${repo.stars}</small>
+                            </label>
+                        </div>
+                    `;
+          });
+
+          repoListEl.innerHTML = repoListHtml;
+        } catch (error) {
+          console.error("Error loading selectable repositories:", error);
+          document.getElementById("repo-list").innerHTML =
+            '<div class="status error">Error loading repositories</div>';
+        }
+      }
+
+      function toggleRepoSelection(repoName) {
+        const checkbox = document.getElementById(`repo-${repoName}`);
+        const analyzeBtn = document.getElementById("analyze-btn");
+
+        if (checkbox.checked) {
+          selectedRepos.add(repoName);
+        } else {
+          selectedRepos.delete(repoName);
+        }
+
+        analyzeBtn.disabled = selectedRepos.size === 0;
+        analyzeBtn.textContent = `Analyze Selected Repositories (${selectedRepos.size})`;
+      }
+
+      async function analyzeSelectedRepos() {
+        if (selectedRepos.size === 0) {
+          alert("Please select at least one repository to analyze");
+          return;
+        }
+
+        const analyzeBtn = document.getElementById("analyze-btn");
+        const originalText = analyzeBtn.textContent;
+
+        try {
+          analyzeBtn.disabled = true;
+          analyzeBtn.textContent = "Starting Analysis...";
+
+          const response = await fetch(`${API_BASE}/github/analyze`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              selected_repos: Array.from(selectedRepos),
+            }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            alert(
+              `Analysis started for ${selectedRepos.size} repositories. Check the Analysis Results section below for updates.`
+            );
+
+            // Clear selections
+            selectedRepos.clear();
+            document
+              .querySelectorAll(".repo-checkbox input")
+              .forEach((cb) => (cb.checked = false));
+
+            // Refresh analysis results
+            setTimeout(loadAnalysisResults, 2000);
+          } else {
+            alert(`Analysis failed: ${data.detail}`);
+          }
+        } catch (error) {
+          console.error("Error starting analysis:", error);
+          alert("Error starting analysis");
+        } finally {
+          analyzeBtn.disabled = selectedRepos.size === 0;
+          analyzeBtn.textContent = originalText;
+        }
+      }
+
+      async function loadAnalysisResults() {
+        try {
+          const response = await fetch(`${API_BASE}/analyzed-projects`);
+          const data = await response.json();
+
+          const resultsEl = document.getElementById("analysis-results");
+
+          if (!data.projects || data.projects.length === 0) {
+            resultsEl.innerHTML =
+              '<div class="status info">No analysis results found. Analyze some repositories to see results here.</div>';
+            return;
+          }
+
+          let resultsHtml = `<div class="status info">Total analyzed projects: ${data.total_count}</div>`;
+
+          data.projects.forEach((project) => {
+            const techStack = project.tech_stack || [];
+            const skills = project.skills || [];
+            const responsibilities = project.responsibilities || [];
+            const keyFeatures = project.key_features || [];
+
+            resultsHtml += `
+                        <div class="analysis-item">
+                            <div class="analysis-header">${project.title}</div>
+                            <div class="analysis-status status-${
+                              project.status
+                            }">${project.status.toUpperCase()}</div>
+                            
+                            <div class="detail-item">
+                                <span class="detail-label">Repository:</span> ${
+                                  project.repo_name
+                                }
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Domain:</span> ${
+                                  project.domain
+                                }
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Project Type:</span> ${
+                                  project.project_type || "N/A"
+                                }
+                            </div>
+                            
+                            <div class="analysis-summary">
+                                <strong>Summary:</strong><br>
+                                ${project.summary}
+                            </div>
+                            
+                            <div class="analysis-summary">
+                                <strong>Problem Solved:</strong><br>
+                                ${project.problem_solved || "Not specified"}
+                            </div>
+                            
+                            <div class="analysis-summary">
+                                <strong>Impact:</strong><br>
+                                ${project.impact}
+                            </div>
+                            
+                            <div class="detail-item">
+                                <span class="detail-label">Technology Stack:</span>
+                                <div class="tech-stack">
+                                    ${techStack
+                                      .map(
+                                        (tech) =>
+                                          `<span class="tech-item">${tech}</span>`
+                                      )
+                                      .join("")}
+                                </div>
+                            </div>
+                            
+                            <div class="detail-item">
+                                <span class="detail-label">Skills Demonstrated:</span>
+                                <div class="skills">
+                                    ${skills
+                                      .map(
+                                        (skill) =>
+                                          `<span class="skill-item">${skill}</span>`
+                                      )
+                                      .join("")}
+                                </div>
+                            </div>
+                            
+                            ${
+                              responsibilities.length > 0
+                                ? `
+                                <div class="detail-item">
+                                    <span class="detail-label">Responsibilities:</span>
+                                    <ul>
+                                        ${responsibilities
+                                          .map((resp) => `<li>${resp}</li>`)
+                                          .join("")}
+                                    </ul>
+                                </div>
+                            `
+                                : ""
+                            }
+                            
+                            ${
+                              keyFeatures.length > 0
+                                ? `
+                                <div class="detail-item">
+                                    <span class="detail-label">Key Features:</span>
+                                    <ul>
+                                        ${keyFeatures
+                                          .map(
+                                            (feature) => `<li>${feature}</li>`
+                                          )
+                                          .join("")}
+                                    </ul>
+                                </div>
+                            `
+                                : ""
+                            }
+                            
+                            <div class="detail-item">
+                                <span class="detail-label">Uses LLM/AI:</span> ${
+                                  project.used_llm_or_vector ? "Yes" : "No"
+                                }
+                            </div>
+                            
+                            <div class="detail-item">
+                                <span class="detail-label">Analyzed:</span> ${new Date(
+                                  project.created_at
+                                ).toLocaleString()}
+                            </div>
+                            
+                            ${
+                              project.error_message
+                                ? `
+                                <div class="detail-item">
+                                    <span class="detail-label">Error:</span> ${project.error_message}
+                                </div>
+                            `
+                                : ""
+                            }
+                        </div>
+                    `;
+          });
+
+          resultsEl.innerHTML = resultsHtml;
+        } catch (error) {
+          console.error("Error loading analysis results:", error);
+          document.getElementById("analysis-results").innerHTML =
+            '<div class="status error">Error loading analysis results</div>';
+        }
+      }
+    </script>
+  </body>
+</html>
