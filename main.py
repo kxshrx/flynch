@@ -13,8 +13,8 @@ if env_file:
 from routes.github import router as github_router
 from routes.analysis import router as analysis_router
 from routes.linkedin import router as linkedin_router
+from routes.auth import router as auth_router
 from db.database import create_tables
-from db.linkedin_database import create_linkedin_tables
 
 app = FastAPI(title="GitHub Repository Manager")
 
@@ -27,11 +27,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Create both databases
+# Create database tables
 create_tables()
-create_linkedin_tables()
 
 # Include all routers
+app.include_router(auth_router)
 app.include_router(github_router)
 app.include_router(analysis_router)
 app.include_router(linkedin_router)
@@ -39,9 +39,19 @@ app.include_router(linkedin_router)
 
 @app.get("/")
 async def root():
-    return FileResponse("index.html")
+    return FileResponse("login.html")
+
+
+@app.get("/login.html")
+async def login_page():
+    return FileResponse("login.html")
 
 
 @app.get("/dashboard")
 async def dashboard():
     return FileResponse("index.html")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

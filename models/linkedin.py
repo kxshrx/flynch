@@ -1,14 +1,15 @@
 from sqlalchemy import Column, String, Text, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
-from db.linkedin_database import LinkedInBase
+from db.database import Base
 from datetime import datetime, timezone
 import uuid
 
 
-class LinkedInProfile(LinkedInBase):
+class LinkedInProfile(Base):
     __tablename__ = "linkedin_profiles"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
     profile_url = Column(Text, unique=True, nullable=False, index=True)
     name = Column(Text, nullable=False)
     headline = Column(Text)
@@ -30,9 +31,11 @@ class LinkedInProfile(LinkedInBase):
     certifications = relationship(
         "LinkedInCertification", back_populates="profile", cascade="all, delete-orphan"
     )
+    # Relationship to User
+    user = relationship("User", back_populates="linkedin_profiles")
 
 
-class LinkedInExperience(LinkedInBase):
+class LinkedInExperience(Base):
     __tablename__ = "linkedin_experience"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -50,7 +53,7 @@ class LinkedInExperience(LinkedInBase):
     profile = relationship("LinkedInProfile", back_populates="experiences")
 
 
-class LinkedInEducation(LinkedInBase):
+class LinkedInEducation(Base):
     __tablename__ = "linkedin_education"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -67,7 +70,7 @@ class LinkedInEducation(LinkedInBase):
     profile = relationship("LinkedInProfile", back_populates="educations")
 
 
-class LinkedInCertification(LinkedInBase):
+class LinkedInCertification(Base):
     __tablename__ = "linkedin_certifications"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))

@@ -136,7 +136,7 @@ class RepositoryAnalyzer:
             raise ValueError(f"Failed to initialize LangChain components: {e}")
 
     async def analyze_repositories(
-        self, repo_names: List[str], username: str, db: Session
+        self, repo_names: List[str], user, db: Session
     ) -> Dict:
         results = {"success": [], "failed": [], "total": len(repo_names)}
 
@@ -144,7 +144,7 @@ class RepositoryAnalyzer:
             try:
                 repo = (
                     db.query(Repository)
-                    .filter_by(repo_name=repo_name, owner_username=username)
+                    .filter_by(repo_name=repo_name, user_id=user.id)
                     .first()
                 )
 
@@ -160,7 +160,7 @@ class RepositoryAnalyzer:
                 # Check if already analyzed
                 existing_analysis = (
                     db.query(ProjectAnalysis)
-                    .filter_by(repo_id=repo.repo_id, user_github_username=username)
+                    .filter_by(repo_id=repo.repo_id, user_id=user.id)
                     .first()
                 )
 
@@ -172,6 +172,7 @@ class RepositoryAnalyzer:
 
                 # Create pending analysis record
                 analysis = ProjectAnalysis(
+                    user_id=user.id,
                     repo_id=repo.repo_id,
                     repo_name=repo_name,
                     title="",
@@ -180,7 +181,7 @@ class RepositoryAnalyzer:
                     skills="[]",
                     domain="",
                     impact="",
-                    user_github_username=username,
+                    user_github_username=user.github_username,
                     analysis_status="pending",
                 )
                 db.add(analysis)

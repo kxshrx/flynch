@@ -4,30 +4,13 @@ uvicorn==0.35.0
 python-multipart==0.0.18
 starlette==0.47.1
 
-# Database dependencies
-SQLAlchemy==2.0.41
-
-# PDF processing
-PyPDF2==3.0.1
-
-# HTTP client
-httpx==0.28.1
-
-# Environment and configuration
-python-dotenv==1.1.1
-
-# LangChain for AI/ML analysis
-langchain==0.3.26
-langchain-community==0.3.27
-langchain-core==0.3.68
-langchain-groq==0.3.6
-langchain-text-splitters==0.3.8
-
-# Groq API
-groq==0.30.0
-
+# Authentication dependencies
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-jwt==4.1.0
 # Pydantic for data validation
 pydantic==2.11.7
+email-validator==2.1.1
 pydantic-settings==2.10.1
 pydantic_core==2.33.2
 

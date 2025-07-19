@@ -9,14 +9,16 @@ from fastapi import (
 )
 from sqlalchemy.orm import Session
 from typing import List, Dict, Optional
-from db.linkedin_database import get_linkedin_database
+from db.database import get_database
 from models.linkedin import (
     LinkedInProfile,
     LinkedInExperience,
     LinkedInEducation,
     LinkedInCertification,
 )
+from models.user import User
 from services.linkedin_pdf_extractor import LinkedInPDFExtractor
+from utils.dependencies import get_current_active_user
 import os
 import tempfile
 
@@ -27,9 +29,10 @@ router = APIRouter()
 async def upload_linkedin_pdf(
     pdf_file: UploadFile = File(...),
     profile_url: str = Form(""),
-    db: Session = Depends(get_linkedin_database),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_database),
 ):
-    """Upload and process LinkedIn PDF profile"""
+    """Upload and process LinkedIn PDF profile for authenticated user"""
     try:
         # Validate file type
         if not pdf_file.filename.endswith(".pdf"):
@@ -44,7 +47,7 @@ async def upload_linkedin_pdf(
         try:
             # Process the PDF
             extractor = LinkedInPDFExtractor()
-            profile_id = extractor.process_pdf_file(temp_file_path, profile_url, db)
+            profile_id = extractor.process_pdf_file(temp_file_path, profile_url, db, current_user.id)
 
             return {
                 "message": "LinkedIn PDF processed successfully",
@@ -61,9 +64,12 @@ async def upload_linkedin_pdf(
 
 
 @router.get("/linkedin/profiles")
-async def get_linkedin_profiles(db: Session = Depends(get_linkedin_database)):
-    """Get all LinkedIn profiles"""
-    profiles = db.query(LinkedInProfile).all()
+async def get_linkedin_profiles(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_database)
+):
+    """Get all LinkedIn profiles for authenticated user"""
+    profiles = db.query(LinkedInProfile).filter_by(user_id=current_user.id).all()
 
     profile_list = []
     for profile in profiles:
@@ -84,10 +90,16 @@ async def get_linkedin_profiles(db: Session = Depends(get_linkedin_database)):
 
 @router.get("/linkedin/profile/{profile_id}")
 async def get_linkedin_profile_details(
-    profile_id: str, db: Session = Depends(get_linkedin_database)
+    profile_id: str, 
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_database)
 ):
-    """Get detailed LinkedIn profile information"""
-    profile = db.query(LinkedInProfile).filter_by(id=profile_id).first()
+    """Get detailed LinkedIn profile information for authenticated user"""
+    profile = (
+        db.query(LinkedInProfile)
+        .filter_by(id=profile_id, user_id=current_user.id)
+        .first()
+    )
 
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")

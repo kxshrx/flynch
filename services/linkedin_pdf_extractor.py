@@ -107,13 +107,13 @@ class LinkedInPDFExtractor:
             ],
         }
 
-    def save_to_database(self, profile_data: Dict, db: Session) -> str:
+    def save_to_database(self, profile_data: Dict, db: Session, user_id: str) -> str:
         """Save parsed profile data to database"""
         try:
-            # Check if profile already exists
+            # Check if profile already exists for this user
             existing_profile = (
                 db.query(LinkedInProfile)
-                .filter_by(profile_url=profile_data["profile_url"])
+                .filter_by(profile_url=profile_data["profile_url"], user_id=user_id)
                 .first()
             )
 
@@ -135,6 +135,7 @@ class LinkedInPDFExtractor:
             else:
                 # Create new profile
                 profile = LinkedInProfile(
+                    user_id=user_id,
                     profile_url=profile_data["profile_url"],
                     name=profile_data["name"],
                     headline=profile_data["headline"],
@@ -192,7 +193,7 @@ class LinkedInPDFExtractor:
             db.rollback()
             raise Exception(f"Error saving to database: {str(e)}")
 
-    def process_pdf_file(self, pdf_path: str, profile_url: str, db: Session) -> str:
+    def process_pdf_file(self, pdf_path: str, profile_url: str, db: Session, user_id: str) -> str:
         """Complete workflow: extract PDF, parse, and save to database"""
         if not os.path.exists(pdf_path):
             raise Exception("PDF file not found!")
@@ -204,6 +205,6 @@ class LinkedInPDFExtractor:
         profile_data = self.parse_profile(pdf_text, profile_url)
 
         # Save to database
-        profile_id = self.save_to_database(profile_data, db)
+        profile_id = self.save_to_database(profile_data, db, user_id)
 
         return profile_id

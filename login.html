@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flynch - Login</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: white;
+        color: black;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      .auth-container {
+        max-width: 400px;
+        width: 100%;
+        background-color: white;
+        padding: 30px;
+        border: 2px solid black;
+        text-align: center;
+      }
+      .auth-header {
+        margin-bottom: 30px;
+      }
+      .auth-form {
+        margin-bottom: 20px;
+      }
+      .form-group {
+        margin-bottom: 15px;
+        text-align: left;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      .form-group input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid black;
+        background-color: white;
+        color: black;
+        box-sizing: border-box;
+      }
+      .form-group input:focus {
+        outline: none;
+        border: 2px solid black;
+      }
+      .btn {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid black;
+        background-color: black;
+        color: white;
+        cursor: pointer;
+        margin-bottom: 10px;
+        font-size: 16px;
+      }
+      .btn:hover {
+        background-color: white;
+        color: black;
+      }
+      .btn-secondary {
+        background-color: white;
+        color: black;
+        border: 1px solid black;
+      }
+      .btn-secondary:hover {
+        background-color: black;
+        color: white;
+      }
+      .error {
+        color: red;
+        margin: 10px 0;
+        text-align: center;
+      }
+      .success {
+        color: green;
+        margin: 10px 0;
+        text-align: center;
+      }
+      .toggle-form {
+        margin-top: 20px;
+        text-align: center;
+      }
+      .toggle-form a {
+        color: black;
+        text-decoration: underline;
+        cursor: pointer;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="auth-container">
+      <div class="auth-header">
+        <h1>Flynch</h1>
+        <p>Professional Profile Manager</p>
+      </div>
+
+      <!-- Login Form -->
+      <div id="login-form" class="auth-form">
+        <h2>Login</h2>
+        <form onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label for="login-username">Username or Email:</label>
+            <input type="text" id="login-username" required />
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password:</label>
+            <input type="password" id="login-password" required />
+          </div>
+          <button type="submit" class="btn">Login</button>
+        </form>
+        <div class="toggle-form">
+          <span>Don't have an account? </span>
+          <a onclick="showRegister()">Register here</a>
+        </div>
+      </div>
+
+      <!-- Register Form -->
+      <div id="register-form" class="auth-form hidden">
+        <h2>Register</h2>
+        <form onsubmit="handleRegister(event)">
+          <div class="form-group">
+            <label for="register-username">Username:</label>
+            <input type="text" id="register-username" required />
+          </div>
+          <div class="form-group">
+            <label for="register-email">Email:</label>
+            <input type="email" id="register-email" required />
+          </div>
+          <div class="form-group">
+            <label for="register-fullname">Full Name:</label>
+            <input type="text" id="register-fullname" />
+          </div>
+          <div class="form-group">
+            <label for="register-password">Password:</label>
+            <input type="password" id="register-password" required />
+          </div>
+          <div class="form-group">
+            <label for="register-confirm-password">Confirm Password:</label>
+            <input type="password" id="register-confirm-password" required />
+          </div>
+          <button type="submit" class="btn">Register</button>
+        </form>
+        <div class="toggle-form">
+          <span>Already have an account? </span>
+          <a onclick="showLogin()">Login here</a>
+        </div>
+      </div>
+
+      <div id="message"></div>
+    </div>
+
+    <script>
+      const API_BASE = "http://localhost:8000";
+
+      function showLogin() {
+        document.getElementById("login-form").classList.remove("hidden");
+        document.getElementById("register-form").classList.add("hidden");
+        clearMessage();
+      }
+
+      function showRegister() {
+        document.getElementById("login-form").classList.add("hidden");
+        document.getElementById("register-form").classList.remove("hidden");
+        clearMessage();
+      }
+
+      function showMessage(message, isError = false) {
+        const messageEl = document.getElementById("message");
+        messageEl.innerHTML = `<div class="${
+          isError ? "error" : "success"
+        }">${message}</div>`;
+      }
+
+      function clearMessage() {
+        document.getElementById("message").innerHTML = "";
+      }
+
+      async function handleLogin(event) {
+        event.preventDefault();
+
+        const username = document.getElementById("login-username").value;
+        const password = document.getElementById("login-password").value;
+
+        try {
+          const response = await fetch(`${API_BASE}/auth/login`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              username: username,
+              password: password,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            // Store the token
+            localStorage.setItem("access_token", data.access_token);
+            localStorage.setItem("user", JSON.stringify(data.user));
+
+            showMessage("Login successful! Redirecting...", false);
+
+            // Redirect to dashboard
+            setTimeout(() => {
+              window.location.href = "/dashboard";
+            }, 1000);
+          } else {
+            showMessage(data.detail || "Login failed", true);
+          }
+        } catch (error) {
+          console.error("Login error:", error);
+          showMessage("Login failed. Please try again.", true);
+        }
+      }
+
+      async function handleRegister(event) {
+        event.preventDefault();
+
+        const username = document.getElementById("register-username").value;
+        const email = document.getElementById("register-email").value;
+        const fullName = document.getElementById("register-fullname").value;
+        const password = document.getElementById("register-password").value;
+        const confirmPassword = document.getElementById(
+          "register-confirm-password"
+        ).value;
+
+        if (password !== confirmPassword) {
+          showMessage("Passwords do not match", true);
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_BASE}/auth/register`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              username: username,
+              email: email,
+              full_name: fullName,
+              password: password,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            showMessage("Registration successful! You can now login.", false);
+            // Clear the form and show login
+            setTimeout(() => {
+              showLogin();
+              document.getElementById("login-username").value = username;
+            }, 2000);
+          } else {
+            showMessage(data.detail || "Registration failed", true);
+          }
+        } catch (error) {
+          console.error("Registration error:", error);
+          showMessage("Registration failed. Please try again.", true);
+        }
+      }
+
+      // Check if user is already logged in
+      window.onload = function () {
+        const token = localStorage.getItem("access_token");
+        if (token) {
+          // Verify token is still valid
+          fetch(`${API_BASE}/auth/me`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          })
+            .then((response) => {
+              if (response.ok) {
+                // Token is valid, redirect to dashboard
+                window.location.href = "/dashboard";
+              } else {
+                // Token is invalid, clear it
+                localStorage.removeItem("access_token");
+                localStorage.removeItem("user");
+              }
+            })
+            .catch(() => {
+              // Error checking token, clear it
+              localStorage.removeItem("access_token");
+              localStorage.removeItem("user");
+            });
+        }
+      };
+    </script>
+  </body>
+</html>

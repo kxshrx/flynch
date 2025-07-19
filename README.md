@@ -12,20 +12,24 @@ A simple web application for managing GitHub repositories, LinkedIn profiles, an
 ## Quick Setup
 
 ### 1. Environment Variables
+
 Create `.env` file:
+
 ```env
 GROQ_API_KEY=your_groq_api_key
-GITHUB_CLIENT_ID=your_github_client_id  
+GITHUB_CLIENT_ID=your_github_client_id
 GITHUB_CLIENT_SECRET=your_github_client_secret
 ```
 
 ### 2. Install & Run
+
 ```bash
 pip install -r requirements.txt
 python main.py
 ```
 
 ### 3. Access
+
 - Open browser: `http://localhost:8000`
 - Use the HTML interface to:
   - Connect GitHub (OAuth)

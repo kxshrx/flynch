@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 import httpx
 import os
 from dotenv import load_dotenv
 from pathlib import Path
+from typing import Optional
 
 # Load environment variables from root directory
 current_file = Path(__file__).resolve()
@@ -19,13 +20,15 @@ else:
 
 from db.database import get_database
 from models.repository import Repository
+from models.user import User
 from services.github_fetcher import GitHubFetcher
 from utils.token_storage import (
     store_github_token,
     is_github_connected,
-    get_latest_username,
     get_github_token,
 )
+from utils.dependencies import get_current_active_user, get_optional_current_user
+from utils.auth import verify_token
 import json
 
 router = APIRouter()
@@ -38,13 +41,50 @@ CALLBACK_URL = "http://localhost:8000/auth/github/callback"
 
 
 @router.get("/auth/github")
-async def connect_github():
-    github_url = f"https://github.com/login/oauth/authorize?client_id={GITHUB_CLIENT_ID}&redirect_uri={CALLBACK_URL}&scope=user:email repo"
+async def connect_github(
+    token: Optional[str] = Query(None),
+    db: Session = Depends(get_database)
+):
+    """Initiate GitHub OAuth for authenticated user"""
+    if not GITHUB_CLIENT_ID or not GITHUB_CLIENT_SECRET:
+        raise HTTPException(
+            status_code=500, 
+            detail="GitHub OAuth not configured. Please set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET."
+        )
+    
+    # Verify the token and get the user
+    if not token:
+        raise HTTPException(status_code=401, detail="Authentication token required")
+    
+    username = verify_token(token)
+    if not username:
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+    
+    user = db.query(User).filter(User.username == username).first()
+    if not user or not user.is_active:
+        raise HTTPException(status_code=401, detail="User not found or inactive")
+    
+    # Store user state for callback
+    state = user.id  # Use user ID as state
+    github_url = f"https://github.com/login/oauth/authorize?client_id={GITHUB_CLIENT_ID}&redirect_uri={CALLBACK_URL}&scope=user:email repo&state={state}"
     return RedirectResponse(url=github_url)
 
 
 @router.get("/auth/github/callback")
-async def github_callback(code: str, db: Session = Depends(get_database)):
+async def github_callback(
+    code: str, 
+    state: str = None,
+    db: Session = Depends(get_database)
+):
+    """Handle GitHub OAuth callback"""
+    if not state:
+        return RedirectResponse(url="/dashboard?error=invalid_state")
+    
+    # Find user by state (user ID)
+    user = db.query(User).filter(User.id == state).first()
+    if not user:
+        return RedirectResponse(url="/dashboard?error=user_not_found")
+    
     async with httpx.AsyncClient() as client:
         response = await client.post(
             "https://github.com/login/oauth/access_token",
@@ -68,38 +108,45 @@ async def github_callback(code: str, db: Session = Depends(get_database)):
         if not user_info:
             return RedirectResponse(url="/dashboard?error=user_fetch_failed")
 
-        username = user_info["login"]
+        github_username = user_info["login"]
+        
+        # Update user's GitHub username
+        user.github_username = github_username
+        db.commit()
 
-        # Use centralized token storage
-        store_github_token(username, access_token)
+        # Store GitHub token for this user
+        store_github_token(user.id, access_token)
 
+        # Fetch repositories for this user
         filtered_repositories = await fetcher.fetch_and_filter_repositories(
-            username, db
+            github_username, db, user.id
         )
         processed_count, skipped_count, deleted_count = (
             fetcher.save_filtered_repositories_to_db(
-                filtered_repositories, username, db
+                filtered_repositories, github_username, db, user.id
             )
         )
 
         print(
-            f"Initial sync: {processed_count} processed, {skipped_count} skipped, {deleted_count} deleted for {username}"
+            f"Initial sync: {processed_count} processed, {skipped_count} skipped, {deleted_count} deleted for user {user.username}"
         )
 
         return RedirectResponse(url="/dashboard?connected=true")
 
 
 @router.get("/github/repos")
-async def get_stored_repos(db: Session = Depends(get_database)):
-    if not is_github_connected():
+async def get_stored_repos(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_database)
+):
+    """Get stored repositories for authenticated user"""
+    if not is_github_connected(current_user.id):
         raise HTTPException(status_code=400, detail="No GitHub connection found")
 
-    latest_username = get_latest_username()
-
-    # Only fetch eligible repositories
+    # Only fetch eligible repositories for this user
     repositories = (
         db.query(Repository)
-        .filter_by(owner_username=latest_username, is_eligible=True)
+        .filter_by(user_id=current_user.id, is_eligible=True)
         .order_by(Repository.fetched_at.desc())
         .limit(20)
         .all()
@@ -107,7 +154,7 @@ async def get_stored_repos(db: Session = Depends(get_database)):
 
     total_count = (
         db.query(Repository)
-        .filter_by(owner_username=latest_username, is_eligible=True)
+        .filter_by(user_id=current_user.id, is_eligible=True)
         .count()
     )
 
@@ -136,7 +183,7 @@ async def get_stored_repos(db: Session = Depends(get_database)):
 
     return {
         "repos": repo_list,
-        "username": latest_username,
+        "username": current_user.github_username,
         "total_count": total_count,
         "displayed_count": len(repo_list),
         "last_sync": repositories[0].fetched_at.isoformat() if repositories else None,
@@ -144,18 +191,22 @@ async def get_stored_repos(db: Session = Depends(get_database)):
 
 
 @router.post("/github/refresh/{username}")
-async def refresh_repositories(username: str, db: Session = Depends(get_database)):
-    if not is_github_connected():
+async def refresh_repositories(
+    username: str, 
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_database)
+):
+    if not is_github_connected(current_user.id):
         raise HTTPException(status_code=400, detail="GitHub connection not found")
 
-    access_token = get_github_token(username)
+    access_token = get_github_token(current_user.id)
     if not access_token:
         raise HTTPException(status_code=400, detail="GitHub token not found")
 
     fetcher = GitHubFetcher(access_token)
-    filtered_repositories = await fetcher.fetch_and_filter_repositories(username, db)
+    filtered_repositories = await fetcher.fetch_and_filter_repositories(username, db, current_user.id)
     processed_count, skipped_count, deleted_count = (
-        fetcher.save_filtered_repositories_to_db(filtered_repositories, username, db)
+        fetcher.save_filtered_repositories_to_db(filtered_repositories, username, db, current_user.id)
     )
 
     return {
@@ -169,24 +220,26 @@ async def refresh_repositories(username: str, db: Session = Depends(get_database
 
 
 @router.get("/github/connection-status")
-async def get_connection_status(db: Session = Depends(get_database)):
-    if not is_github_connected():
+async def get_connection_status(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_database)
+):
+    if not is_github_connected(current_user.id):
         return {"connected": False, "message": "No GitHub tokens stored"}
 
-    latest_username = get_latest_username()
-    repo_count = db.query(Repository).filter_by(owner_username=latest_username).count()
+    repo_count = db.query(Repository).filter_by(user_id=current_user.id).count()
 
     latest_repo = (
         db.query(Repository)
-        .filter_by(owner_username=latest_username)
+        .filter_by(user_id=current_user.id)
         .order_by(Repository.fetched_at.desc())
         .first()
     )
 
     return {
         "connected": True,
-        "username": latest_username,
+        "username": current_user.github_username,
         "repository_count": repo_count,
         "last_fetch": latest_repo.fetched_at.isoformat() if latest_repo else None,
-        "token_available": get_github_token(latest_username) is not None,
+        "token_available": get_github_token(current_user.id) is not None,
     }

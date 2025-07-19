@@ -19,5 +19,7 @@ def get_database():
 def create_tables():
     from models.repository import Repository
     from models.project_analysis import ProjectAnalysis
+    from models.user import User
+    from models.linkedin import LinkedInProfile, LinkedInExperience, LinkedInEducation, LinkedInCertification
 
     Base.metadata.create_all(bind=engine)

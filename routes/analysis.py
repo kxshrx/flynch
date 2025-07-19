@@ -6,11 +6,12 @@ import os
 from db.database import get_database
 from services.repo_analyzer import RepositoryAnalyzer
 from models.project_analysis import ProjectAnalysis
+from models.user import User
 from utils.token_storage import (
     get_github_token,
-    get_latest_username,
     is_github_connected,
 )
+from utils.dependencies import get_current_active_user
 import json
 from dotenv import load_dotenv
 from pathlib import Path
@@ -66,21 +67,22 @@ router = APIRouter()
 
 
 class AnalysisRequest(BaseModel):
-    selected_repos: List[str]
+    repo_names: List[str]  # Changed from selected_repos to repo_names to match frontend
 
 
 @router.post("/github/analyze")
 async def analyze_repositories(
     request: AnalysisRequest,
     background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_database),
 ):
-    print(f"Received analysis request: {request.selected_repos}")
+    print(f"Received analysis request: {request.repo_names}")
 
-    if not is_github_connected():
+    if not is_github_connected(current_user.id):
         raise HTTPException(status_code=400, detail="No GitHub connection found")
 
-    if not request.selected_repos:
+    if not request.repo_names:
         raise HTTPException(status_code=400, detail="No repositories selected")
 
     # Get Groq API key with enhanced error handling
@@ -94,8 +96,7 @@ async def analyze_repositories(
 
     print(f"✅ Using Groq API key (length: {len(groq_api_key)})")
 
-    username = get_latest_username()
-    access_token = get_github_token(username)
+    access_token = get_github_token(current_user.id)
 
     if not access_token:
         raise HTTPException(status_code=400, detail="GitHub token not found")
@@ -111,34 +112,36 @@ async def analyze_repositories(
 
     # Start analysis in background
     background_tasks.add_task(
-        analyzer.analyze_repositories, request.selected_repos, username, db
+        analyzer.analyze_repositories, request.repo_names, current_user, db
     )
 
     return {
-        "message": f"Analysis started for {len(request.selected_repos)} repositories",
-        "repositories": request.selected_repos,
+        "message": f"Analysis started for {len(request.repo_names)} repositories",
+        "repositories": request.repo_names,
     }
 
 
 # Rest of your existing functions...
 @router.get("/check-github-connection")
-async def check_github_connection():
-    if not is_github_connected():
+async def check_github_connection(current_user: User = Depends(get_current_active_user)):
+    if not is_github_connected(current_user.id):
         return {"connected": False, "message": "No GitHub connection found"}
 
-    username = get_latest_username()
+    username = current_user.github_username
     return {"connected": True, "username": username}
 
 
 @router.get("/analyzed-projects")
-async def get_analyzed_projects(db: Session = Depends(get_database)):
-    if not is_github_connected():
+async def get_analyzed_projects(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_database)
+):
+    if not is_github_connected(current_user.id):
         raise HTTPException(status_code=400, detail="No GitHub connection found")
 
-    username = get_latest_username()
     projects = (
         db.query(ProjectAnalysis)
-        .filter_by(user_github_username=username)
+        .filter_by(user_id=current_user.id)
         .order_by(ProjectAnalysis.created_at.desc())
         .all()
     )

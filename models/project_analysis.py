@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey
 from sqlalchemy.types import TypeDecorator, DateTime as SQLDateTime
+from sqlalchemy.orm import relationship
 from db.database import Base
 from datetime import datetime, timezone
 import uuid
@@ -28,6 +29,7 @@ class ProjectAnalysis(Base):
     __tablename__ = "project_analysis"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
     repo_id = Column(Integer, nullable=False)
     repo_name = Column(String, nullable=False)
     title = Column(String, nullable=False)
@@ -48,3 +50,6 @@ class ProjectAnalysis(Base):
     responsibilities = Column(Text, nullable=True)
     key_features = Column(Text, nullable=True)
     used_llm_or_vector = Column(Boolean, default=False)
+    
+    # Relationship to User
+    user = relationship("User", back_populates="project_analyses")

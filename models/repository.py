@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey
 from sqlalchemy.types import TypeDecorator, DateTime as SQLDateTime
+from sqlalchemy.orm import relationship
 from db.database import Base
 from datetime import datetime, timezone
 
@@ -29,6 +30,7 @@ class Repository(Base):
     __tablename__ = "repositories"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
     repo_id = Column(Integer, unique=True, index=True)
     repo_name = Column(String, index=True)
     repo_url = Column(String)
@@ -45,3 +47,6 @@ class Repository(Base):
     readme_content = Column(Text, nullable=True)
     languages_list = Column(Text, nullable=True)
     is_eligible = Column(Boolean, default=True)
+    
+    # Relationship to User
+    user = relationship("User", back_populates="repositories")

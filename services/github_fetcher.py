@@ -69,7 +69,7 @@ class GitHubFetcher:
         return True
 
     async def fetch_and_filter_repositories(
-        self, username: str, db: Session
+        self, username: str, db: Session, user_id: str
     ) -> List[Dict]:
         """Fetch repositories and only process those that need updates"""
         repositories = []
@@ -78,7 +78,7 @@ class GitHubFetcher:
 
         # Get existing repositories from database for comparison
         existing_repos = {}
-        db_repos = db.query(Repository).filter_by(owner_username=username).all()
+        db_repos = db.query(Repository).filter_by(owner_username=username, user_id=user_id).all()
         for repo in db_repos:
             existing_repos[repo.repo_id] = {
                 "updated_at": repo.updated_at,
@@ -174,7 +174,7 @@ class GitHubFetcher:
         return repositories
 
     def save_filtered_repositories_to_db(
-        self, repositories: List[Dict], username: str, db: Session
+        self, repositories: List[Dict], username: str, db: Session, user_id: str
     ):
         """Save changes and delete ineligible repositories from database"""
         current_time = self.dt_manager.now_utc()
@@ -188,7 +188,7 @@ class GitHubFetcher:
 
             # Check if repository should be deleted
             if repo_data.get("should_delete", False):
-                existing_repo = db.query(Repository).filter_by(repo_id=repo_id).first()
+                existing_repo = db.query(Repository).filter_by(repo_id=repo_id, user_id=user_id).first()
                 if existing_repo:
                     db.delete(existing_repo)
                     deleted_count += 1
@@ -205,7 +205,7 @@ class GitHubFetcher:
             )
 
             # Check if repository exists in database
-            existing_repo = db.query(Repository).filter_by(repo_id=repo_id).first()
+            existing_repo = db.query(Repository).filter_by(repo_id=repo_id, user_id=user_id).first()
 
             if existing_repo:
                 # Compare timestamps using centralized method
@@ -261,6 +261,7 @@ class GitHubFetcher:
                     readme_content=repo_data.get("readme_content"),
                     languages_list=json.dumps(repo_data.get("languages_list", [])),
                     is_eligible=repo_data.get("is_eligible", True),
+                    user_id=user_id,
                 )
                 db.add(new_repo)
 
